@@ -1,0 +1,33 @@
+#!/usr/bin/env python3
+import sys
+import subprocess
+import hashlib
+
+if __name__ == '__main__':
+
+    # Validate options
+    if(len(sys.argv)<2):
+        print('''usage: securl URL ...''')
+
+    # Extract URL (first non-switch argument)
+    url = [x for x in sys.argv[1:] if not x.startswith("-")][0]
+
+    # Call curl
+    command_to_call = ['curl'] + sys.argv[1:]
+    p = subprocess.Popen(command_to_call, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = p.communicate()
+    exit_code = p.returncode
+
+    # Confirm the hash
+    if(exit_code == 0):
+        actual_hash = hashlib.sha256(stdout).hexdigest()
+        if(actual_hash not in url):
+            print(f"securl: SHA256 didn't match any hash in the URL")
+            print(f"securl: actual_hash " + actual_hash)
+            print(f"securl: url: " + url)
+            exit(3)
+
+    # Return the output
+    sys.stdout.write(stdout.decode('utf-8'))
+    sys.stderr.write(stderr.decode('utf-8'))
+    exit(exit_code)
