@@ -3,6 +3,51 @@ import sys
 import subprocess
 import hashlib
 
+#------------------------------------------------------
+# securl: Just like curl, except it...
+#    1) Hashes the resulting file with SHA-256/192*,
+#    2) Formats the result as base58**
+#    3) Verifies that the result was indeed
+#       embedded within the originating URL.
+#    4) Only outputs the file if step 3 succeeded
+#
+#    * SHA-256/192 means SHA-256 truncated to 192 bits
+#    ** base58 is like base64 but with the alphabet
+#       using the characters in the below string
+#       (and without any padding)
+#------------------------------------------------------
+
+# Convert an array of bytes to a number (little endian)
+def array_to_num(a):
+    r = 0
+    for i, val in enumerate(a):
+        r = r + (256**i)*val
+    return r
+
+# Define "base58" as the following base radix string
+base58_alphabet = tuple("123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ")
+
+# Convert a number to base58
+def base58_encode(num):
+    radix_alphabet = base58_alphabet
+    radix_dictionary = dict((c, v) for v, c in enumerate(radix_alphabet))
+    radix_length = len(radix_alphabet)
+    if not num:
+        return radix_alphabet[0]
+    encoding = ""
+    while num:
+        num, rem = divmod(num, radix_length)
+        encoding = radix_alphabet[rem] + encoding
+    return encoding
+
+# Return the base58-encoded SHA-256/192 hash of the input bytes
+def get_securl_hash_of(bs):
+    bs = hashlib.sha256(bs).digest()[:24]
+    num = array_to_num(bs)
+    final_hash = base58_encode(num)
+    return final_hash
+
+# Main
 if __name__ == '__main__':
 
     # Validate options
@@ -20,11 +65,9 @@ if __name__ == '__main__':
 
     # Confirm the hash
     if(exit_code == 0):
-        actual_hash = hashlib.sha256(stdout).hexdigest()
+        actual_hash = get_securl_hash_of(stdout)
         if(actual_hash not in url):
-            print(f"securl: SHA256 didn't match any hash in the URL")
-            print(f"securl: actual_hash " + actual_hash)
-            print(f"securl: url: " + url)
+            print(f"securl: error: actual hash ("+actual_hash+") was not found in the URL ("+url+")")
             exit(3)
 
     # Return the output
