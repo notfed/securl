@@ -11,7 +11,7 @@ import hashlib
 #       embedded within the originating URL.
 #    4) Only outputs the file if step 3 succeeded
 #
-#    * SHA-256/192 means SHA-256 truncated to 192 bits
+#    * Actually, just SHA-256 truncated to 192 bits
 #    ** base58 is like base64 but with the alphabet
 #       using the characters in the below string
 #       (and without any padding)
